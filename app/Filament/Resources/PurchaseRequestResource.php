@@ -170,6 +170,39 @@ class PurchaseRequestResource extends Resource
                 //
             ])
             ->actions([
+                Tables\Actions\Action::make('approve')
+                    ->label('Setujui')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->visible(fn (PurchaseRequest $record) => Auth::user()->isManager() || Auth::user()->isAdmin())
+                    ->hidden(fn (PurchaseRequest $record) => in_array($record->status, ['approved', 'purchased', 'received', 'rejected', 'cancelled']))
+                    ->action(function (PurchaseRequest $record) {
+                        $record->update([
+                            'status' => 'approved',
+                            'approved_by' => Auth::id(),
+                        ]);
+                    }),
+                    
+                Tables\Actions\Action::make('reject')
+                    ->label('Tolak')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->form([
+                        Forms\Components\Textarea::make('rejection_reason')
+                            ->label('Alasan Penolakan')
+                            ->required(),
+                    ])
+                    ->visible(fn (PurchaseRequest $record) => Auth::user()->isManager() || Auth::user()->isAdmin())
+                    ->hidden(fn (PurchaseRequest $record) => in_array($record->status, ['approved', 'purchased', 'received', 'rejected', 'cancelled']))
+                    ->action(function (PurchaseRequest $record, array $data) {
+                        $record->update([
+                            'status' => 'rejected',
+                            'rejection_reason' => $data['rejection_reason'],
+                        ]);
+                    }),
+
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\ViewAction::make(),
             ])
@@ -194,5 +227,18 @@ class PurchaseRequestResource extends Resource
             'create' => Pages\CreatePurchaseRequest::route('/create'),
             'edit' => Pages\EditPurchaseRequest::route('/{record}/edit'),
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        
+        $user = Auth::user();
+        
+        if ($user && $user->isStaff()) {
+            $query->where('requester_id', $user->id);
+        }
+        
+        return $query;
     }
 }
