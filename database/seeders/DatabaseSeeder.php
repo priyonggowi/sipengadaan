@@ -22,6 +22,15 @@ class DatabaseSeeder extends Seeder
             'department' => 'IT / General Affairs',
             'phone' => '08111111111'
         ]);
+        
+        User::create([
+            'name' => 'Direktur Utama',
+            'email' => 'director@sipengadaan.com',
+            'password' => Hash::make('password'),
+            'role' => 'director',
+            'department' => 'Direksi',
+            'phone' => '08999999999'
+        ]);
 
         User::create([
             'name' => 'Manager Operasional',

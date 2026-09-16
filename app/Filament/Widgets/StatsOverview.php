@@ -16,8 +16,8 @@ class StatsOverview extends BaseWidget
                 ->descriptionIcon('heroicon-m-document-text')
                 ->color('primary'),
                 
-            Stat::make('Menunggu Persetujuan', PurchaseRequest::where('status', 'pending')->count())
-                ->description('Perlu direview Manager')
+            Stat::make('Menunggu Persetujuan', PurchaseRequest::whereIn('status', ['pending_manager', 'pending_director'])->count())
+                ->description('Perlu direview Manager/Direksi')
                 ->descriptionIcon('heroicon-m-clock')
                 ->color('warning'),
                 

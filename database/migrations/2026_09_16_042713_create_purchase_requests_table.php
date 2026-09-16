@@ -18,7 +18,8 @@ return new class extends Migration
             $table->foreignId('approved_by')->nullable()->constrained('users')->nullOnDelete();
             $table->enum('status', [
                 'draft',
-                'pending',
+                'pending_manager',
+                'pending_director',
                 'approved',
                 'rejected',
                 'purchased',

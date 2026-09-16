@@ -141,7 +141,7 @@ class PurchaseRequestResource extends Resource
                 Tables\Columns\BadgeColumn::make('status')
                     ->colors([
                         'secondary' => 'draft',
-                        'warning' => 'pending',
+                        'warning' => fn ($state) => in_array($state, ['pending_manager', 'pending_director']),
                         'success' => fn ($state) => in_array($state, ['approved', 'purchased', 'received']),
                         'danger' => fn ($state) => in_array($state, ['rejected', 'cancelled']),
                     ]),
@@ -170,13 +170,24 @@ class PurchaseRequestResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\Action::make('approve')
-                    ->label('Setujui')
+                Tables\Actions\Action::make('approve_manager')
+                    ->label('Setujui (Manager)')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
                     ->requiresConfirmation()
-                    ->visible(fn (PurchaseRequest $record) => Auth::user()->isManager() || Auth::user()->isAdmin())
-                    ->hidden(fn (PurchaseRequest $record) => in_array($record->status, ['approved', 'purchased', 'received', 'rejected', 'cancelled']))
+                    ->visible(fn (PurchaseRequest $record) => (Auth::user()->isManager() || Auth::user()->isAdmin()) && in_array($record->status, ['draft', 'pending_manager']))
+                    ->action(function (PurchaseRequest $record) {
+                        $record->update([
+                            'status' => 'pending_director',
+                        ]);
+                    }),
+                    
+                Tables\Actions\Action::make('approve_director')
+                    ->label('Setujui (Direksi)')
+                    ->icon('heroicon-o-check-badge')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->visible(fn (PurchaseRequest $record) => (Auth::user()->isDirector() || Auth::user()->isAdmin()) && $record->status === 'pending_director')
                     ->action(function (PurchaseRequest $record) {
                         $record->update([
                             'status' => 'approved',
@@ -194,7 +205,7 @@ class PurchaseRequestResource extends Resource
                             ->label('Alasan Penolakan')
                             ->required(),
                     ])
-                    ->visible(fn (PurchaseRequest $record) => Auth::user()->isManager() || Auth::user()->isAdmin())
+                    ->visible(fn (PurchaseRequest $record) => (Auth::user()->isManager() || Auth::user()->isDirector() || Auth::user()->isAdmin()))
                     ->hidden(fn (PurchaseRequest $record) => in_array($record->status, ['approved', 'purchased', 'received', 'rejected', 'cancelled']))
                     ->action(function (PurchaseRequest $record, array $data) {
                         $record->update([
